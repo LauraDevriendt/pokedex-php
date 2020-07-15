@@ -108,6 +108,10 @@ function getSpecies($path, $evolutionArr)
             <h1>Pokemon</h1>
         </div>
     </header>
+    <nav class="navbar navbar-light bg-light">
+        <a class="nav-link" href="index.php">Pokedex</a>
+        <a class="nav-link active" href="category.php">Categories</a>
+    </nav>
     <main class="container">
         <div class="pokedexCtn">
             <img src="img/pokedexpaint.png" alt="pokedex">

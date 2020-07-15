@@ -3,26 +3,27 @@
   margin: 0;
   padding: 0; }
 
+header {
+  height: 30vh;
+  background: url("../img/header-bg.jpg") center;
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: center; }
+  header .headerH1 {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 5px; }
+    header .headerH1 h1 {
+      font-size: 3rem;
+      color: #c00c0c;
+      padding: 1rem 2rem; }
+
 #pokedex {
   font-family: 'Orbitron', sans-serif;
   font-size: 1rem;
   overflow-x: hidden;
   position: relative;
   min-height: 100vh; }
-  #pokedex header {
-    height: 30vh;
-    background: url("../img/header-bg.jpg") center;
-    background-size: cover;
-    display: flex;
-    justify-content: center;
-    align-items: center; }
-    #pokedex header .headerH1 {
-      background: rgba(255, 255, 255, 0.85);
-      border-radius: 5px; }
-      #pokedex header .headerH1 h1 {
-        font-size: 3rem;
-        color: #c00c0c;
-        padding: 1rem 2rem; }
   #pokedex main .pokedexCtn {
     position: relative; }
   #pokedex main .pokemonImgCtn {
@@ -167,5 +168,13 @@
   background-color: #8A77AA; }
 #pokedex main .steel {
   background-color: #B8B8D0; }
+
+/* categories */
+#pokemonsRow h4 {
+  font-size: 1.2rem;
+  font-weight: 900; }
+#pokemonsRow .pokemonImg {
+  margin: 0 auto;
+  width: 100px; }
 
 /*# sourceMappingURL=style.css.map */
