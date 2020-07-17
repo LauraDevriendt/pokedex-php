@@ -43,7 +43,7 @@ if (filter_has_var(INPUT_GET, 'submit')) {
             $prevEvoName = $evolutionArr[$pos - 1];
             $jsonPrevEvo = file_get_contents("https://pokeapi.co/api/v2/pokemon/$prevEvoName", true);
             $prevEvo = json_decode($jsonPrevEvo, true);
-            return $prevEvo['sprites']['front_shiny'];
+            $prevEvoImg= $prevEvo['sprites']['front_shiny'];
 
         }
 
@@ -155,13 +155,13 @@ function getSpecies($path, $evolutionArr)
             </div>
             <div class="idBtnCtn">
                 <a href=<?php if ($id - 1 >= 0) {
-                    echo "http://becode.local/pokedex/?name=" . ($id - 1) . "&submit=";
+                    echo "http://becode.local/pokedex-php/?name=" . ($id - 1) . "&submit=";
                 }
                 ?>>
                     <button id="prevId" title="Previous ID" class="btn btn-success idBtnStyle"><i
                                 class="fas fa-backward"></i></button>
                 </a>
-                <a href=<?php echo "http://becode.local/pokedex/?name=" . ($id + 1) . "&submit="; ?>>
+                <a href=<?php echo "http://becode.local/pokedex-php/?name=" . ($id + 1) . "&submit="; ?>>
                     <button id="nextId" title="Next ID" class="btn btn-warning idBtnStyle"><i
                                 class="fas fa-forward"></i>
                     </button>
@@ -197,9 +197,9 @@ function getSpecies($path, $evolutionArr)
             </form>
             <div class="evolutionImgCtn">
                 <div title="Previous evolution"
-                     class="prevEvo text-center"><?php if (!empty($prevEvoImg)) echo "<a href=" . "http://becode.local/pokedex/?name=" . ($id - 1) . "&submit=>" . "<img src=$prevEvoImg alt='prevEvo'></a>"; ?></div>
+                     class="prevEvo text-center"><?php if (!empty($prevEvoImg)) echo "<a href=" . "http://becode.local/pokedex-php/?name=" . ($id - 1) . "&submit=>" . "<img src=$prevEvoImg alt='prevEvo'></a>"; ?></div>
                 <div title="Next evolution"
-                     class="nextEvo text-center"><?php if (!empty($nextEvoImg)) echo "<a href=" . "http://becode.local/pokedex/?name=" . ($id + 1) . "&submit=>" . "<img src=$nextEvoImg alt='nextEvo'></a>"; ?></div>
+                     class="nextEvo text-center"><?php if (!empty($nextEvoImg)) echo "<a href=" . "http://becode.local/pokedex-php/?name=" . ($id + 1) . "&submit=>" . "<img src=$nextEvoImg alt='nextEvo'></a>"; ?></div>
 
             </div>
         </div>

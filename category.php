@@ -6,34 +6,98 @@ error_reporting(E_ALL & ~E_NOTICE);
 $jsondata = file_get_contents("https://pokeapi.co/api/v2/pokemon?limit=964", true);
 $data = json_decode($jsondata, true);
 $urls = [];
-$types=[];
-$currentpage=(isset($_GET['page']))? (int)($_GET['page']):1;
-$displayNumber=20;
+$typeData=[];
+$currentpage = (isset($_GET['page'])) ? (int)($_GET['page']) : 1;
+$typefilter=false;
 
 
-    foreach (array_slice($data['results'], ($currentpage-1)*$displayNumber,$displayNumber) as $pokemon) {
-        $name = $pokemon['name'];
-        $url = $pokemon['url'];
-        $urls[] = $url;
+if(isset($_POST['displaynumbers'])){
+    $_COOKIE['displaynumber']= $_POST['displaynumbers'];
+    setcookie('displaynumber',$_POST['displaynumbers'],time()+(86400*30));
+}
 
+$displayNumber = (isset($_COOKIE['displaynumber'])) ? (int)($_COOKIE['displaynumber']) : 20;
+
+
+foreach (array_slice($data['results'], ($currentpage - 1) * $displayNumber, $displayNumber) as $pokemon) {
+    $url = $pokemon['url'];
+    $urls[] = $url;
+}
+
+
+$pokemons = [];
+function makePokemons($urls)
+{
+    foreach ($urls as $key => $url) {
+        $jsondataPokemon = file_get_contents($url, true);
+        $dataPokemon = json_decode($jsondataPokemon, true);
+
+        $pokemons[] = new PokemonsInfo($dataPokemon['id'], $dataPokemon['name'], $dataPokemon['sprites']['front_shiny']);
+    }
+    return $pokemons;
+}
+
+$pokemons = makePokemons($urls);
+
+
+
+if (filter_has_var(INPUT_GET, 'submit')) {
+    $typefilter=true;
+
+    $jsontypeData = file_get_contents("https://pokeapi.co/api/v2/type/" . $_GET['types'], true);
+    $typeData = json_decode($jsontypeData, true);
+    $urls = [];
+    foreach (array_slice($typeData['pokemon'], ($currentpage - 1) * $displayNumber, $displayNumber) as $pokemon) {
+        $urls [] = $pokemon['pokemon']['url'];
+
+    }
+    $pokemons = makePokemons($urls);
+
+
+}
+
+function previousPage($typefilter,$currentpage){
+    if($typefilter){
+
+        if ($currentpage !== 1) {
+            $currentpage=$currentpage-1;
+            return "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+        } else {
+            $currentpage=1;
+            return "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+        }
+
+    }else{
+        if ($currentpage !== 1) {
+            $currentpage=$currentpage-1;
+            return"http://becode.local/pokedex-php/category.php?page=$currentpage";
+        } else {
+            return "http://becode.local/pokedex-php/category.php?page=1";
+        }
     }
 
 
-
-
-
-
-
-if (filter_has_var(INPUT_POST, 'submit')) {
-// get form data
-$displayNumber= $_POST['displaynumbers'];
 }
-if (filter_has_var(INPUT_GET, 'submit')) {
-// get form data
-    $jsontypeData= file_get_contents("https://pokeapi.co/api/v2/type/".$_GET['types'],true);
-    $typeData=json_decode($jsontypeData,true);
+function nextPage($typefilter,$currentpage,$typedata,$data,$displayNumber){
+    if($typefilter){
 
+        if ($currentpage < ceil(count($typedata['pokemon']) / $displayNumber)) {
+            ++$currentpage;
+            echo "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+        } else {
 
+            echo "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+        }
+
+    }else{
+
+        if ($currentpage < ceil(count($data['results']) / $displayNumber)){
+            ++$currentpage;
+            echo"http://becode.local/pokedex-php/category.php?page=$currentpage";
+        } else {
+            echo "http://becode.local/pokedex-php/category.php?page=$currentpage";
+        }
+    }
 
 }
 
@@ -70,11 +134,6 @@ class PokemonsInfo
         return $this->frontImg;
     }
 }
-
-
-
-
-
 
 
 ?>
@@ -123,7 +182,7 @@ class PokemonsInfo
                 <?php
                 $types = json_decode(file_get_contents("https://pokeapi.co/api/v2/type", true), true);
                 foreach ($types['results'] as $type) {
-                    echo "<option value=".$type['name'].">".$type['name']."</option>";
+                    echo "<option value=" . $type['name'] . ">" . $type['name'] . "</option>";
                 }
 
                 ?>
@@ -137,39 +196,45 @@ class PokemonsInfo
     <nav aria-label="Page navigation example">
         <ul class="pagination">
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=1" aria-label="Previous">
+                <a class="page-link" href=<?php
+                if($typefilter){
+                    echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=1";
+                }else{
+                    echo "http://becode.local/pokedex-php/category.php?page=1";
+                }
+                ?> aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                     <span class="sr-only">Previous</span>
                 </a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?php
-                if($currentpage!==1){
-                    echo $currentpage-1;
-                } else{
-                    echo 1;
-                } ?>" aria-label="Previous">
+                <a class="page-link" href="<?=previousPage($typefilter,$currentpage)
+
+                ?>" aria-label="Previous">
                     <span aria-hidden="true">&lsaquo;</span>
                     <span class="sr-only">Previous</span>
                 </a>
             </li>
-            <li class="page-item"><a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?=$currentpage?>"><?= $currentpage ?></a></li>
+            <li class="page-item"><a class="page-link"
+                                     href="http://becode.local/pokedex-php/category.php?page=<?= $currentpage ?>"><?= $currentpage ?></a>
+            </li>
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?php
-                if($currentpage!==ceil(count($data['results'])/$displayNumber)){
-                   echo $currentpage+1;
-                }else{
-                    echo $currentpage;
-                }
-
-
+                <a class="page-link" href="<?=nextPage($typefilter,$currentpage,$typeData,$data,$displayNumber)
                 ?>" aria-label="Next">
                     <span aria-hidden="true">&rsaquo;</span>
                     <span class="sr-only">Next</span>
                 </a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?=ceil(count($data['results'])/$displayNumber) ?>" aria-label="Next">
+                <a class="page-link"
+                   href="<?php
+                   if($typefilter){
+                       echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=".ceil(count($typeData['pokemon']) / $displayNumber);
+                   }else{
+                       echo "http://becode.local/pokedex-php/category.php?page=".ceil(count($data['results']) / $displayNumber);
+                   }
+                   ?>"
+                   aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                     <span class="sr-only">Next</span>
                 </a>
@@ -180,30 +245,19 @@ class PokemonsInfo
 <section id="favorites">
 
 </section>
-
 <section id="pokemons" class="container">
     <div id="pokemonsRow" class="row d-flex justify-content-center">
         <?php
 
-        $pokemons=[];
-        foreach ($urls as $key => $url) {
-            $jsondataPokemon = file_get_contents($url, true);
-            $dataPokemon = json_decode($jsondataPokemon, true);
 
-            $pokemons[]=new PokemonsInfo($dataPokemon['id'],  $dataPokemon['name'], $dataPokemon['sprites']['front_shiny']);
-        }
+        if (!empty($pokemons)) {
 
-
-
-
-        if(!empty($pokemons)){
-
-            foreach ($pokemons as $pokemon){
-                echo  '<div class="pokemon mr-3 my-2 card col-5">
-  <img class="pokemonImg card-img-top" src="'.$pokemon ->getFrontImg().'" alt="pokemon">
+            foreach ($pokemons as $pokemon) {
+                echo '<div class="pokemon mr-3 my-2 card col-5">
+  <img class="pokemonImg card-img-top" src="' . $pokemon->getFrontImg() . '" alt="pokemon">
   <div class="card-body">
-    <h4 class="card-title text-center">'.$pokemon ->getId().': '.ucwords($pokemon ->getName()).'</h4>
-    <div class="text-center"><a href="#!" class="btn btn-warning">More information</a></div>
+    <h4 class="card-title text-center">' . $pokemon->getId() . ': ' . ucwords($pokemon->getName()) . '</h4>
+    <div class="text-center"><a href="http://becode.local/pokedex-php/index.php?name='.$pokemon->getId().'&submit=" class="btn btn-warning mr-3">More information</a><a class="heart" href="#"><i class="far fa-heart"></i> heart it</a></div>
   </div>
 </div>';
 
@@ -215,44 +269,49 @@ class PokemonsInfo
     </div>
 
 </section>
-<section id="paginationAbove" class="mt-4 d-flex justify-content-center">
+<section id="paginationDown" class="mt-4 d-flex justify-content-center">
     <nav aria-label="Page navigation example">
         <ul class="pagination">
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=1" aria-label="Previous">
+                <a class="page-link" href=<?php
+                if($typefilter){
+                    echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=1";
+                }else{
+                    echo "http://becode.local/pokedex-php/category.php?page=1";
+                }
+                ?> aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                     <span class="sr-only">Previous</span>
                 </a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?php
-                if($currentpage!==1){
-                    echo $currentpage-1;
-                } else{
-                    echo 1;
-                } ?>" aria-label="Previous">
+                <a class="page-link" href="<?=previousPage($typefilter,$currentpage)
+
+                ?>" aria-label="Previous">
                     <span aria-hidden="true">&lsaquo;</span>
                     <span class="sr-only">Previous</span>
                 </a>
             </li>
-            <li class="page-item"><a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?=$currentpage?>"><?= $currentpage ?></a></li>
+            <li class="page-item"><a class="page-link"
+                                     href="http://becode.local/pokedex-php/category.php?page=<?= $currentpage ?>"><?= $currentpage ?></a>
+            </li>
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?php
-                //@todo NOT WORKING FIX CEILING
-                if($currentpage!==ceil(count($data['results'])/$displayNumber)){
-                    echo $currentpage+1;
-                }else{
-                    echo ceil(count($data['results'])/$displayNumber);
-                }
-
-
+                <a class="page-link" href="<?=nextPage($typefilter,$currentpage,$typeData,$data,$displayNumber)
                 ?>" aria-label="Next">
                     <span aria-hidden="true">&rsaquo;</span>
                     <span class="sr-only">Next</span>
                 </a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="http://becode.local/pokedex-php/category.php?page=<?=ceil(count($data['results'])/$displayNumber) ?>" aria-label="Next">
+                <a class="page-link"
+                   href="<?php
+                   if($typefilter){
+                       echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=".ceil(count($typeData['pokemon']) / $displayNumber);
+                   }else{
+                       echo "http://becode.local/pokedex-php/category.php?page=".ceil(count($data['results']) / $displayNumber);
+                   }
+                   ?>"
+                   aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                     <span class="sr-only">Next</span>
                 </a>
@@ -260,6 +319,7 @@ class PokemonsInfo
         </ul>
     </nav>
 </section>
+
 
 <!-- Optional JavaScript -->
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -272,6 +332,7 @@ class PokemonsInfo
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
         integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
         crossorigin="anonymous"></script>
+<script src="https://kit.fontawesome.com/1cf94312e8.js" crossorigin="anonymous"></script>
 <!-- Customised script -->
 <script src="resources/js/script.js"></script>
 </body>

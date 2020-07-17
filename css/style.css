@@ -177,4 +177,8 @@ header {
   margin: 0 auto;
   width: 100px; }
 
+.heart:hover {
+  color: #AB1F23;
+  font-weight: 800; }
+
 /*# sourceMappingURL=style.css.map */
