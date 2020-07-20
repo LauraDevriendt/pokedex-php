@@ -3,17 +3,19 @@ declare(strict_types=1);
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL & ~E_NOTICE);
+
+
 $jsondata = file_get_contents("https://pokeapi.co/api/v2/pokemon?limit=964", true);
 $data = json_decode($jsondata, true);
 $urls = [];
-$typeData=[];
+$typeData = [];
 $currentpage = (isset($_GET['page'])) ? (int)($_GET['page']) : 1;
-$typefilter=false;
+$typefilter = false;
 
 
-if(isset($_POST['displaynumbers'])){
-    $_COOKIE['displaynumber']= $_POST['displaynumbers'];
-    setcookie('displaynumber',$_POST['displaynumbers'],time()+(86400*30));
+if (isset($_POST['displaynumbers'])) {
+    $_COOKIE['displaynumber'] = $_POST['displaynumbers'];
+    setcookie('displaynumber', $_POST['displaynumbers'], time() + (86400 * 30));
 }
 
 $displayNumber = (isset($_COOKIE['displaynumber'])) ? (int)($_COOKIE['displaynumber']) : 20;
@@ -40,9 +42,8 @@ function makePokemons($urls)
 $pokemons = makePokemons($urls);
 
 
-
 if (filter_has_var(INPUT_GET, 'submit')) {
-    $typefilter=true;
+    $typefilter = true;
 
     $jsontypeData = file_get_contents("https://pokeapi.co/api/v2/type/" . $_GET['types'], true);
     $typeData = json_decode($jsontypeData, true);
@@ -56,54 +57,81 @@ if (filter_has_var(INPUT_GET, 'submit')) {
 
 }
 
-function previousPage($typefilter,$currentpage){
-    if($typefilter){
+function previousPage($typefilter, $currentpage)
+{
+    if ($typefilter) {
 
         if ($currentpage !== 1) {
-            $currentpage=$currentpage-1;
-            return "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+            $currentpage = $currentpage - 1;
+            return "category.php?submit=&types=" . $_GET['types'] . "&page=$currentpage";
         } else {
-            $currentpage=1;
-            return "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+            $currentpage = 1;
+            return "category.php?submit=&types=" . $_GET['types'] . "&page=$currentpage";
         }
 
-    }else{
+    } else {
         if ($currentpage !== 1) {
-            $currentpage=$currentpage-1;
-            return"http://becode.local/pokedex-php/category.php?page=$currentpage";
+            $currentpage = $currentpage - 1;
+            return "category.php?page=$currentpage";
         } else {
-            return "http://becode.local/pokedex-php/category.php?page=1";
+            return "category.php?page=1";
         }
     }
 
 
 }
-function nextPage($typefilter,$currentpage,$typedata,$data,$displayNumber){
-    if($typefilter){
+
+function nextPage($typefilter, $currentpage, $typedata, $data, $displayNumber)
+{
+    if ($typefilter) {
 
         if ($currentpage < ceil(count($typedata['pokemon']) / $displayNumber)) {
             ++$currentpage;
-            echo "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+            echo "category.php?submit=&types=" . $_GET['types'] . "&page=$currentpage";
         } else {
 
-            echo "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=$currentpage";
+            echo "category.php?submit=&types=" . $_GET['types'] . "&page=$currentpage";
         }
 
-    }else{
+    } else {
 
-        if ($currentpage < ceil(count($data['results']) / $displayNumber)){
+        if ($currentpage < ceil(count($data['results']) / $displayNumber)) {
             ++$currentpage;
-            echo"http://becode.local/pokedex-php/category.php?page=$currentpage";
+            echo "category.php?page=$currentpage";
         } else {
-            echo "http://becode.local/pokedex-php/category.php?page=$currentpage";
+            echo "category.php?page=$currentpage";
         }
     }
 
 }
 
 
+$favourites = [];
 
 
+if (isset($_GET['favourite'])) {
+
+
+    $favourites[] = $_GET['favourite'];
+
+    $_COOKIE['favourite'] = json_encode(array_unique($favourites));
+    setcookie('favourite', json_encode(array_unique($favourites), JSON_THROW_ON_ERROR));
+}
+
+if (isset($_COOKIE['favourite'])) {
+
+    $favourites = array_unique(json_decode($_COOKIE['favourite']));
+
+    if(isset($_GET['noFavourite'])){
+
+        $key= array_search($_GET['noFavourite'], $favourites, true);
+        unset($favourites[$key]);
+
+
+
+    }
+
+}
 
 
 class PokemonsInfo
@@ -192,15 +220,51 @@ class PokemonsInfo
 
 
 </section>
+<section id="favorites">
+    <h1 class="text-center">Favourites</h1>
+    <div class="container">
+        <div class="row">
+            <?php
+
+            if(!empty($favourites)){
+                $favourites=array_unique($favourites);
+                foreach ($favourites as $favourite){
+                    findObjectById($favourite,$pokemons,$currentpage);
+
+                }
+            }
+            function findObjectById($favourite,$pokemons,$currentpage){
+
+
+                foreach ( $pokemons as $pokemon ) {
+                    if ( $favourite == $pokemon->getId() ) {
+                        echo '<div class="pokemon mr-3 my-2 card col-2">
+  <img class="fluid-img pokemonImg card-img-top" src="' . $pokemon->getFrontImg() . '" alt="pokemon">
+  <div class="card-body">
+    <h6 class="card-title text-center">' . $pokemon->getId() . ': ' . ucwords($pokemon->getName()) . '</h6>
+    <div class="text-center"><a href="index.php?name=' . $pokemon->getId() . '&submit=" class="btn btn-warning mr-3">More information</a><a  title="delete favourite" class="unheart" href="category.php?' . '&noFavourite=' . $pokemon->getId() . '"><i class="far fa-heart"></i> Unheart</a></div>
+  </div>
+</div>';
+                    }
+                }
+
+
+            }
+
+            ?>
+        </div>
+    </div>
+
+</section>
 <section id="paginationAbove" class="mt-4 d-flex justify-content-center">
     <nav aria-label="Page navigation example">
         <ul class="pagination">
             <li class="page-item">
                 <a class="page-link" href=<?php
-                if($typefilter){
-                    echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=1";
-                }else{
-                    echo "http://becode.local/pokedex-php/category.php?page=1";
+                if ($typefilter) {
+                    echo "&types=" . $_GET['types'] . "&page=1";
+                } else {
+                    echo "category.php?&page=1";
                 }
                 ?> aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
@@ -208,7 +272,7 @@ class PokemonsInfo
                 </a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="<?=previousPage($typefilter,$currentpage)
+                <a class="page-link" href="<?= previousPage($typefilter, $currentpage)
 
                 ?>" aria-label="Previous">
                     <span aria-hidden="true">&lsaquo;</span>
@@ -216,10 +280,10 @@ class PokemonsInfo
                 </a>
             </li>
             <li class="page-item"><a class="page-link"
-                                     href="http://becode.local/pokedex-php/category.php?page=<?= $currentpage ?>"><?= $currentpage ?></a>
+                                     href="/category.php?page=<?= $currentpage ?>"><?= $currentpage ?></a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="<?=nextPage($typefilter,$currentpage,$typeData,$data,$displayNumber)
+                <a class="page-link" href="<?= nextPage($typefilter, $currentpage, $typeData, $data, $displayNumber)
                 ?>" aria-label="Next">
                     <span aria-hidden="true">&rsaquo;</span>
                     <span class="sr-only">Next</span>
@@ -228,10 +292,10 @@ class PokemonsInfo
             <li class="page-item">
                 <a class="page-link"
                    href="<?php
-                   if($typefilter){
-                       echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=".ceil(count($typeData['pokemon']) / $displayNumber);
-                   }else{
-                       echo "http://becode.local/pokedex-php/category.php?page=".ceil(count($data['results']) / $displayNumber);
+                   if ($typefilter) {
+                       echo "category.php?submit=&types=" . $_GET['types'] . "&page=" . ceil(count($typeData['pokemon']) / $displayNumber);
+                   } else {
+                       echo "category.php?page=" . ceil(count($data['results']) / $displayNumber);
                    }
                    ?>"
                    aria-label="Next">
@@ -241,9 +305,6 @@ class PokemonsInfo
             </li>
         </ul>
     </nav>
-</section>
-<section id="favorites">
-
 </section>
 <section id="pokemons" class="container">
     <div id="pokemonsRow" class="row d-flex justify-content-center">
@@ -257,7 +318,7 @@ class PokemonsInfo
   <img class="pokemonImg card-img-top" src="' . $pokemon->getFrontImg() . '" alt="pokemon">
   <div class="card-body">
     <h4 class="card-title text-center">' . $pokemon->getId() . ': ' . ucwords($pokemon->getName()) . '</h4>
-    <div class="text-center"><a href="http://becode.local/pokedex-php/index.php?name='.$pokemon->getId().'&submit=" class="btn btn-warning mr-3">More information</a><a class="heart" href="#"><i class="far fa-heart"></i> heart it</a></div>
+    <div class="text-center"><a href="index.php?name=' . $pokemon->getId() . '&submit=" class="btn btn-warning mr-3">More information</a><a  title="Add to favorites" class="heart" href="category.php?page=' . $currentpage . '&favourite=' . $pokemon->getId() . '"><i class="far fa-heart"></i> heart it</a></div>
   </div>
 </div>';
 
@@ -274,10 +335,10 @@ class PokemonsInfo
         <ul class="pagination">
             <li class="page-item">
                 <a class="page-link" href=<?php
-                if($typefilter){
-                    echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=1";
-                }else{
-                    echo "http://becode.local/pokedex-php/category.php?page=1";
+                if ($typefilter) {
+                    echo "category.php?submit=&types=" . $_GET['types'] . "&page=1";
+                } else {
+                    echo "category.php?page=1";
                 }
                 ?> aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
@@ -285,7 +346,7 @@ class PokemonsInfo
                 </a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="<?=previousPage($typefilter,$currentpage)
+                <a class="page-link" href="<?= previousPage($typefilter, $currentpage)
 
                 ?>" aria-label="Previous">
                     <span aria-hidden="true">&lsaquo;</span>
@@ -293,10 +354,10 @@ class PokemonsInfo
                 </a>
             </li>
             <li class="page-item"><a class="page-link"
-                                     href="http://becode.local/pokedex-php/category.php?page=<?= $currentpage ?>"><?= $currentpage ?></a>
+                                     href="category.php?page=<?= $currentpage ?>"><?= $currentpage ?></a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="<?=nextPage($typefilter,$currentpage,$typeData,$data,$displayNumber)
+                <a class="page-link" href="<?= nextPage($typefilter, $currentpage, $typeData, $data, $displayNumber)
                 ?>" aria-label="Next">
                     <span aria-hidden="true">&rsaquo;</span>
                     <span class="sr-only">Next</span>
@@ -305,10 +366,10 @@ class PokemonsInfo
             <li class="page-item">
                 <a class="page-link"
                    href="<?php
-                   if($typefilter){
-                       echo   "http://becode.local/pokedex-php/category.php?submit=&types=".$_GET['types']."&page=".ceil(count($typeData['pokemon']) / $displayNumber);
-                   }else{
-                       echo "http://becode.local/pokedex-php/category.php?page=".ceil(count($data['results']) / $displayNumber);
+                   if ($typefilter) {
+                       echo "category.php?submit=&types=" . $_GET['types'] . "&page=" . ceil(count($typeData['pokemon']) / $displayNumber);
+                   } else {
+                       echo "category.php?page=" . ceil(count($data['results']) / $displayNumber);
                    }
                    ?>"
                    aria-label="Next">
