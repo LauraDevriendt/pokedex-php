@@ -108,16 +108,6 @@ function nextPage($typefilter, $currentpage, $typedata, $data, $displayNumber)
 
 $favourites = [];
 
-
-if (isset($_GET['favourite'])) {
-
-
-    $favourites[] = $_GET['favourite'];
-
-    $_COOKIE['favourite'] = json_encode(array_unique($favourites));
-    setcookie('favourite', json_encode(array_unique($favourites), JSON_THROW_ON_ERROR));
-}
-
 if (isset($_COOKIE['favourite'])) {
 
     $favourites = array_unique(json_decode($_COOKIE['favourite']));
@@ -130,8 +120,17 @@ if (isset($_COOKIE['favourite'])) {
 
 
     }
-
 }
+
+if (isset($_GET['favourite'])) {
+
+
+    $favourites[] = $_GET['favourite'];
+
+    $_COOKIE['favourite'] = json_encode(array_unique($favourites));
+    setcookie('favourite', json_encode(array_unique($favourites), JSON_THROW_ON_ERROR));
+}
+
 
 
 class PokemonsInfo
@@ -226,14 +225,14 @@ class PokemonsInfo
         <div class="row">
             <?php
 
-            if(!empty($favourites)){
-                $favourites=array_unique($favourites);
-                foreach ($favourites as $favourite){
+            if(!empty($_COOKIE['favourite'])){
+                print_r(json_decode($_COOKIE['favourite']));
+                foreach (json_decode($_COOKIE['favourite']) as $favourite){
                     findObjectById($favourite,$pokemons,$currentpage);
 
                 }
             }
-            function findObjectById($favourite,$pokemons,$currentpage){
+            function findObjectById($favourite,$pokemons){
 
 
                 foreach ( $pokemons as $pokemon ) {
