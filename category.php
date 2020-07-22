@@ -26,21 +26,20 @@ foreach (array_slice($data['results'], ($currentpage - 1) * $displayNumber, $dis
     $urls[] = $url;
 }
 
-
-$pokemons = [];
-function makePokemons($urls)
+function makePokemons(array $urls) : array
 {
+    $pokemons = [];
+
     foreach ($urls as $key => $url) {
         $jsondataPokemon = file_get_contents($url, true);
         $dataPokemon = json_decode($jsondataPokemon, true);
 
-        $pokemons[] = new PokemonsInfo($dataPokemon['id'], $dataPokemon['name'], $dataPokemon['sprites']['front_shiny']);
+        $pokemons[$dataPokemon['id']] = new PokemonsInfo($dataPokemon['id'], $dataPokemon['name'], $dataPokemon['sprites']['front_shiny']);
     }
     return $pokemons;
 }
 
 $pokemons = makePokemons($urls);
-
 
 if (filter_has_var(INPUT_GET, 'submit')) {
     $typefilter = true;
@@ -228,26 +227,28 @@ class PokemonsInfo
             if(!empty($_COOKIE['favourite'])){
                 print_r(json_decode($_COOKIE['favourite']));
                 foreach (json_decode($_COOKIE['favourite']) as $favourite){
-                    findObjectById($favourite,$pokemons,$currentpage);
+                    $pokemon = findPokemonById($favourite,$pokemons,$currentpage);
 
-                }
-            }
-            function findObjectById($favourite,$pokemons){
-
-
-                foreach ( $pokemons as $pokemon ) {
-                    if ( $favourite == $pokemon->getId() ) {
-                        echo '<div class="pokemon mr-3 my-2 card col-2">
+                    echo '<div class="pokemon mr-3 my-2 card col-2">
   <img class="fluid-img pokemonImg card-img-top" src="' . $pokemon->getFrontImg() . '" alt="pokemon">
   <div class="card-body">
     <h6 class="card-title text-center">' . $pokemon->getId() . ': ' . ucwords($pokemon->getName()) . '</h6>
-    <div class="text-center"><a href="index.php?name=' . $pokemon->getId() . '&submit=" class="btn btn-warning mr-3">More information</a><a  title="delete favourite" class="unheart" href="category.php?' . '&noFavourite=' . $pokemon->getId() . '"><i class="far fa-heart"></i> Unheart</a></div>
+    <div class="text-center"><a href="index.php?name=' . $pokemon->getId() . '&submit=" class="btn btn-warning mr-3">More information</a><a  title="delete id" class="unheart" href="category.php?' . '&noFavourite=' . $pokemon->getId() . '"><i class="far fa-heart"></i> Unheart</a></div>
   </div>
 </div>';
-                    }
                 }
+            }
 
+            function findPokemonById(int $id, array $pokemons) : PokemonsInfo {
+                if(isset($pokemons[$id])) {
+                    return $pokemons[$id];
+                } else {
+                    // do fetch for pokemon here
+                    // make a new Pokemon object
+                    // put it in the $pokemon var
 
+                    //design pattern: lazy loading
+                }
             }
 
             ?>
