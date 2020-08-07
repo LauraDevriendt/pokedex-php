@@ -3,17 +3,10 @@ declare(strict_types=1);
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL & ~E_NOTICE);
-$prevEvoImg = "";
-$nextEvoImg = "";
-$pokeFront = "";
-$pokeBack = "";
-
 
 if (filter_has_var(INPUT_GET, 'submit')) {
-// get form data
     $pokemon = strtolower($_GET['name']);
     if (!empty($pokemon)) {
-
 
         $jsonGeneralData = file_get_contents("https://pokeapi.co/api/v2/pokemon/$pokemon", true);
         $generalData = json_decode($jsonGeneralData, true);
@@ -24,55 +17,40 @@ if (filter_has_var(INPUT_GET, 'submit')) {
         $jsonPokemonData = file_get_contents("https://pokeapi.co/api/v2/pokemon-species/$id", true);
         $pokemonData = json_decode($jsonPokemonData, true);
 
-        // evolution array
-        $jsonEvoData = file_get_contents($pokemonData['evolution_chain']['url'], true);
-        $evoData = json_decode($jsonEvoData, true);
-        $path = $evoData['chain'];
-        $evolutionArr = array($path['species']['name']);
-        $evolutionArr = getSpecies($path, $evolutionArr);
+        $evolutionArr = getEvolutions($pokemonData);
 
         // find position current pokemon
         $pos = array_search($generalData['name'], $evolutionArr, true);
 
         // check prev and next evo
-
-        $nextEvoName = "";
-        $prevEvoName = "";
-
         if ($pos - 1 >= 0) {
-            $prevEvoName = $evolutionArr[$pos - 1];
-            $jsonPrevEvo = file_get_contents("https://pokeapi.co/api/v2/pokemon/$prevEvoName", true);
-            $prevEvo = json_decode($jsonPrevEvo, true);
-            $prevEvoImg= $prevEvo['sprites']['front_shiny'];
-
+            --$pos;
+            $prevEvoImg = getEvoImg($pos, $evolutionArr);
         }
 
-
         if ($pos + 1 < count($evolutionArr)) {
-            $nextEvoName = $evolutionArr[$pos + 1];
-            $jsonNextEvo = file_get_contents("https://pokeapi.co/api/v2/pokemon/$nextEvoName", true);
-            $nextEvo = json_decode($jsonNextEvo, true);
-            $nextEvoImg = $nextEvo['sprites']['front_shiny'];
-
+            ++$pos;
+            $nextEvoImg = getEvoImg($pos, $evolutionArr);
         }
 
         // moves
-        $moves = [];
-        if (count($generalData['moves']) > 4) {
-            $movesData = $generalData['moves'];
-            $randIndex = array_rand($movesData, min(4, count($movesData)));
-            foreach ($randIndex as $index) {
-                $moves[] = $movesData[$index]['move']['name'];
-            }
-
-
-        }
+        $moves = getMoves($generalData);
 
 
     }
 }
 
-function getSpecies($path, $evolutionArr)
+function getEvolutions(array $pokemonData): array
+{
+    $jsonEvoData = file_get_contents($pokemonData['evolution_chain']['url'], true);
+    $evoData = json_decode($jsonEvoData, true);
+    $path = $evoData['chain'];
+    $evolutionArr = array($path['species']['name']);
+    $evolutionArr = getOtherEvo($path, $evolutionArr);
+    return $evolutionArr;
+}
+
+function getOtherEvo(array $path, array $evolutionArr): array
 {
 
     while (count($path['evolves_to']) > 0) {
@@ -84,6 +62,27 @@ function getSpecies($path, $evolutionArr)
     return $evolutionArr;
 }
 
+function getEvoImg(int $pos, array $evolutionArr): string
+{
+    $prevEvoName = $evolutionArr[$pos];
+    $jsonPrevEvo = file_get_contents("https://pokeapi.co/api/v2/pokemon/$prevEvoName", true);
+    $prevEvo = json_decode($jsonPrevEvo, true);
+    return (string)$prevEvo['sprites']['front_shiny'];
+
+
+}
+
+function getMoves(array $generalData): array
+{
+    $moves = [];
+    $movesData = $generalData['moves'];
+    $randIndex = (array)array_rand($movesData, min(4, count($movesData)));
+    foreach ($randIndex as $index) {
+        $moves[] = $movesData[$index]['move']['name'];
+    }
+    return $moves;
+
+}
 
 ?>
 <!doctype html>
@@ -154,26 +153,20 @@ function getSpecies($path, $evolutionArr)
 
             </div>
             <div class="idBtnCtn">
-                <a href=<?php if ($id - 1 >= 0) {
-                    echo "http://becode.local/pokedex-php/?name=" . ($id - 1) . "&submit=";
-                }
-                ?>>
-                    <button id="prevId" title="Previous ID" class="btn btn-success idBtnStyle"><i
-                                class="fas fa-backward"></i></button>
-                </a>
-                <a href=<?php echo "http://becode.local/pokedex-php/?name=" . ($id + 1) . "&submit="; ?>>
-                    <button id="nextId" title="Next ID" class="btn btn-warning idBtnStyle"><i
-                                class="fas fa-forward"></i>
+                <a href=<?php if ($id - 1 >= 0) echo "?name=" . ($id - 1) . "&submit="; ?>>
+                    <button id="prevId" title="Previous ID" class="btn btn-success idBtnStyle">
+                        <i class="fas fa-backward"></i>
                     </button>
                 </a>
-
+                <a href=<?php echo "?name=" . ($id + 1) . "&submit="; ?>>
+                    <button id="nextId" title="Next ID" class="btn btn-warning idBtnStyle">
+                        <i class="fas fa-forward"></i>
+                    </button>
+                </a>
             </div>
             <div class="idScreenCtn"><?php if (!empty($generalData)) echo $id; ?></div>
             <div class="nameAndMovesCtn">
-                <h5 class="name"><?php if (!empty($generalData)) {
-                        $pokemonName = strtoupper($generalData['name']);
-                        echo $pokemonName;
-                    } ?></h5>
+                <h5 class="name"><?php if (!empty($generalData)) echo strtoupper($generalData['name']); ?></h5>
                 <ul>
                     <div class="row">
                         <li class="col pokeMove"><?php if (!empty($moves)) echo $moves[0]; ?></li>
@@ -188,8 +181,7 @@ function getSpecies($path, $evolutionArr)
             <div class="warningCtn">
                 <p>Fetch error or invalid name/id!</p>
             </div>
-            <form method="get" action="<?php echo $_SERVER['
-}PHP_SELF']; ?>" class="searchCtn">
+            <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" class="searchCtn">
                 <input type="text" name="name" class="form-control"
                        value="<?php echo isset($_GET['name']) ? $pokemon : ""; ?>">
                 <button id="run" class="btn btn-secondary" name="submit" type="submit"><i class="fas fa-search"></i>
@@ -197,9 +189,9 @@ function getSpecies($path, $evolutionArr)
             </form>
             <div class="evolutionImgCtn">
                 <div title="Previous evolution"
-                     class="prevEvo text-center"><?php if (!empty($prevEvoImg)) echo "<a href=" . "http://becode.local/pokedex-php/?name=" . ($id - 1) . "&submit=>" . "<img src=$prevEvoImg alt='prevEvo'></a>"; ?></div>
+                     class="prevEvo text-center"><?php if (!empty($prevEvoImg)) echo "<a href=" . "?name=" . ($id - 1) . "&submit=>" . "<img src=$prevEvoImg alt='prevEvo'></a>"; ?></div>
                 <div title="Next evolution"
-                     class="nextEvo text-center"><?php if (!empty($nextEvoImg)) echo "<a href=" . "http://becode.local/pokedex-php/?name=" . ($id + 1) . "&submit=>" . "<img src=$nextEvoImg alt='nextEvo'></a>"; ?></div>
+                     class="nextEvo text-center"><?php if (!empty($nextEvoImg)) echo "<a href=" . "?name=" . ($id + 1) . "&submit=>" . "<img src=$nextEvoImg alt='nextEvo'></a>"; ?></div>
 
             </div>
         </div>
